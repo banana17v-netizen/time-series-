@@ -293,6 +293,7 @@ Opens at [http://localhost:8501](http://localhost:8501) (stop the previous insta
 
 ---
 
+Or opens at [https://timeseriesfianl.streamlit.app/]
 ## Configuration
 
 After `prepare_backend.py` runs, `times/dashboard/artifacts/config.json` is produced with the following structure:
