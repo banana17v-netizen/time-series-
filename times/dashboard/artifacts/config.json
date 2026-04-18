@@ -1,0 +1,43 @@
+{
+  "LAG_OIL": 15,
+  "LAG_FX": 15,
+  "OPTIMAL_VAR_LAG": 6,
+  "FEATURE_COLS": [
+    "Brent_lag_15",
+    "USD_INR_lag_15",
+    "day_of_week",
+    "month",
+    "day_of_month",
+    "is_weekend"
+  ],
+  "TARGET_COL": "Median_Price",
+  "SPLIT_RATIO": 0.8,
+  "metrics": {
+    "VAR": {
+      "RMSE": 5194.71,
+      "MAE": 4671.78,
+      "MAPE": 57.13
+    },
+    "XGBoost": {
+      "RMSE": 3248.82,
+      "MAE": 2113.62,
+      "MAPE": 39.69
+    }
+  },
+  "feature_importance": {
+    "Brent_lag_15": 0.1243,
+    "USD_INR_lag_15": 0.1991,
+    "day_of_week": 0.0464,
+    "month": 0.4295,
+    "day_of_month": 0.0422,
+    "is_weekend": 0.1586
+  },
+  "train_period": {
+    "start": "2019-04-21",
+    "end": "2019-06-12"
+  },
+  "test_period": {
+    "start": "2019-06-15",
+    "end": "2019-06-27"
+  }
+}
