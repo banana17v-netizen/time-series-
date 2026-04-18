@@ -10,6 +10,14 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
+# ─── PAGE CONFIG ────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Airline Dynamic Pricing Dashboard",
+    page_icon="✈️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 # ─── CONFIG ─────────────────────────────────────────────────────────
 ARTIFACT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'artifacts')
 
@@ -33,14 +41,6 @@ xgb_model = load_models()
 LAG_OIL = config['LAG_OIL']
 LAG_FX  = config['LAG_FX']
 FEATURE_COLS = config['FEATURE_COLS']
-
-# ─── PAGE CONFIG ────────────────────────────────────────────────────
-st.set_page_config(
-    page_title="Airline Dynamic Pricing Dashboard",
-    page_icon="✈️",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
 
 # ─── CUSTOM CSS ─────────────────────────────────────────────────────
 st.markdown("""
@@ -96,13 +96,13 @@ st.markdown("""
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("## ✈️ Bảng Điều Khiển")
+    st.markdown("## ✈️ Control Panel")
     st.markdown("---")
 
     # Date range
-    st.markdown("### 📅 Khoảng thời gian")
+    st.markdown("### 📅 Date Range")
     min_date, max_date = df['Date'].min().date(), df['Date'].max().date()
-    date_range = st.date_input("Chọn khoảng ngày", value=(min_date, max_date),
+    date_range = st.date_input("Select date range", value=(min_date, max_date),
                                min_value=min_date, max_value=max_date)
     if isinstance(date_range, tuple) and len(date_range) == 2:
         start_date, end_date = date_range
@@ -112,30 +112,30 @@ with st.sidebar:
     st.markdown("---")
 
     # Model selector
-    st.markdown("### 🤖 Mô hình dự báo")
-    model_choice = st.radio("Chọn mô hình", ["XGBoost", "VAR"], index=0,
-                            help="Chọn mô hình để hiển thị kết quả dự báo")
+    st.markdown("### 🤖 Forecast Model")
+    model_choice = st.radio("Select model", ["XGBoost", "VAR"], index=0,
+                            help="Choose a model to display forecast results")
 
     st.markdown("---")
 
     # What-If
-    st.markdown("### ⚡ Kịch bản Giả định (What-If)")
-    whatif_enabled = st.toggle("Bật mô phỏng cú sốc giá dầu", value=False)
+    st.markdown("### ⚡ What-If Scenario")
+    whatif_enabled = st.toggle("Enable oil price shock simulation", value=False)
 
     oil_shock_pct = 0.0
     shock_date = max_date
     if whatif_enabled:
         if model_choice == "VAR":
-            st.warning("⚠️ What-If chỉ khả dụng với XGBoost. Đang chuyển sang XGBoost.")
+            st.warning("⚠️ What-If is only available with XGBoost. Switching to XGBoost.")
             model_choice = "XGBoost"
-        oil_shock_pct = st.slider("Mức thay đổi giá dầu (%)", -50, 50, 15, step=5,
-                                  help="Dương = tăng giá, Âm = giảm giá")
-        shock_date = st.date_input("Ngày bắt đầu cú sốc", value=min_date,
+        oil_shock_pct = st.slider("Oil price change (%)", -50, 50, 15, step=5,
+                                  help="Positive = price increase, Negative = price decrease")
+        shock_date = st.date_input("Shock start date", value=min_date,
                                    min_value=min_date, max_value=max_date)
 
     st.markdown("---")
-    st.markdown(f"**Lag Giá dầu:** {LAG_OIL} ngày")
-    st.markdown(f"**Lag Tỷ giá:** {LAG_FX} ngày")
+    st.markdown(f"**Oil Lag:** {LAG_OIL} days")
+    st.markdown(f"**FX Lag:** {LAG_FX} days")
 
 # ═══════════════════════════════════════════════════════════════════
 # FILTER DATA
@@ -147,7 +147,7 @@ filtered = df[mask].copy()
 # HEADER
 # ═══════════════════════════════════════════════════════════════════
 st.markdown("# ✈️ Dynamic Pricing Dashboard")
-st.markdown("*Phân tích tác động Giá dầu & Tỷ giá lên Giá vé máy bay — Chặng Delhi → Cochin*")
+st.markdown("*Analysis of Oil Price & Exchange Rate impact on Airfare — Route: Delhi → Cochin*")
 
 # ═══════════════════════════════════════════════════════════════════
 # KPI METRICS
@@ -167,7 +167,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.markdown(f"""
     <div class="kpi-card">
-        <div class="kpi-label">Giá vé TB hiện tại</div>
+        <div class="kpi-label">Avg. Ticket Price</div>
         <div class="kpi-value">₹{avg_price:,.0f}</div>
         <div class="kpi-delta">Median Price (INR)</div>
     </div>""", unsafe_allow_html=True)
@@ -177,15 +177,15 @@ with col2:
     arrow = "▲" if oil_change > 0 else "▼"
     st.markdown(f"""
     <div class="kpi-card">
-        <div class="kpi-label">Biến động giá dầu</div>
+        <div class="kpi-label">Oil Price Change</div>
         <div class="kpi-value">{abs(oil_change):.1f}%</div>
-        <div class="kpi-delta {delta_class}">{arrow} Trong khoảng lọc</div>
+        <div class="kpi-delta {delta_class}">{arrow} In selected range</div>
     </div>""", unsafe_allow_html=True)
 
 with col3:
     st.markdown(f"""
     <div class="kpi-card">
-        <div class="kpi-label">Sai số mô hình ({model_choice})</div>
+        <div class="kpi-label">Model Error ({model_choice})</div>
         <div class="kpi-value">₹{rmse_val:,.0f}</div>
         <div class="kpi-delta">RMSE | MAE: ₹{metrics['MAE']:,.0f}</div>
     </div>""", unsafe_allow_html=True)
@@ -193,16 +193,16 @@ with col3:
 # ═══════════════════════════════════════════════════════════════════
 # MAIN CHART — Dual Y-Axis
 # ═══════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-title">📊 Biểu đồ Giá vé & Giá dầu</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">📊 Ticket Price & Oil Price Chart</div>', unsafe_allow_html=True)
 
 fig = make_subplots(specs=[[{"secondary_y": True}]])
 
 # Actual price
 fig.add_trace(go.Scatter(
     x=filtered['Date'], y=filtered['Median_Price'],
-    name='Giá vé thực tế', mode='lines+markers',
+    name='Actual Price', mode='lines+markers',
     line=dict(color='#6366f1', width=2.5), marker=dict(size=5),
-    hovertemplate='<b>%{x|%d/%m/%Y}</b><br>Giá vé: ₹%{y:,.0f}<extra></extra>'
+    hovertemplate='<b>%{x|%d/%m/%Y}</b><br>Ticket Price: ₹%{y:,.0f}<extra></extra>'
 ), secondary_y=False)
 
 # Predicted price
@@ -211,15 +211,15 @@ pred_data = filtered.dropna(subset=[pred_col])
 if len(pred_data) > 0:
     fig.add_trace(go.Scatter(
         x=pred_data['Date'], y=pred_data[pred_col],
-        name=f'Dự báo {model_choice}', mode='lines+markers',
+        name=f'{model_choice} Forecast', mode='lines+markers',
         line=dict(color='#f59e0b', width=2, dash='dash'), marker=dict(size=5, symbol='diamond'),
-        hovertemplate=f'<b>%{{x|%d/%m/%Y}}</b><br>Dự báo: ₹%{{y:,.0f}}<extra></extra>'
+        hovertemplate=f'<b>%{{x|%d/%m/%Y}}</b><br>Forecast: ₹%{{y:,.0f}}<extra></extra>'
     ), secondary_y=False)
 
 # Oil price (right axis)
 fig.add_trace(go.Scatter(
     x=filtered['Date'], y=filtered['Brent_Oil_Price'],
-    name='Giá dầu Brent (USD)', mode='lines',
+    name='Brent Oil Price (USD)', mode='lines',
     line=dict(color='#ef4444', width=1.5, dash='dot'), opacity=0.7,
     hovertemplate='<b>%{x|%d/%m/%Y}</b><br>Brent: $%{y:.2f}<extra></extra>'
 ), secondary_y=True)
@@ -249,23 +249,25 @@ if whatif_enabled and oil_shock_pct != 0:
 
         fig.add_trace(go.Scatter(
             x=sim_filtered['Date'], y=sim_filtered['Simulated_Price'],
-            name=f'Mô phỏng (Dầu {oil_shock_pct:+d}%)', mode='lines+markers',
+            name=f'Simulation (Oil {oil_shock_pct:+d}%)', mode='lines+markers',
             line=dict(color='#f43f5e', width=2.5), marker=dict(size=5, symbol='star'),
-            hovertemplate='<b>%{x|%d/%m/%Y}</b><br>Mô phỏng: ₹%{y:,.0f}<extra></extra>'
+            hovertemplate='<b>%{x|%d/%m/%Y}</b><br>Simulated: ₹%{y:,.0f}<extra></extra>'
         ), secondary_y=False)
 
         # Shock start line
-        fig.add_vline(x=pd.Timestamp(shock_date), line_dash="dash",
+        shock_ts_ms = int(pd.Timestamp(shock_date).timestamp() * 1000)
+        fig.add_vline(x=shock_ts_ms, line_dash="dash",
                       line_color="#f43f5e", opacity=0.6,
-                      annotation_text=f"Cú sốc {oil_shock_pct:+d}%",
+                      annotation_text=f"Shock {int(oil_shock_pct):+d}%",
                       annotation_font_color="#f43f5e")
 
         # Lag effect annotation
         lag_effect_date = pd.Timestamp(shock_date) + pd.Timedelta(days=LAG_OIL)
         if lag_effect_date <= pd.Timestamp(end_date):
-            fig.add_vline(x=lag_effect_date, line_dash="dot",
+            lag_ts_ms = int(lag_effect_date.timestamp() * 1000)
+            fig.add_vline(x=lag_ts_ms, line_dash="dot",
                           line_color="#34d399", opacity=0.6,
-                          annotation_text=f"Hiệu ứng Lag ({LAG_OIL} ngày)",
+                          annotation_text=f"Lag Effect ({LAG_OIL} days)",
                           annotation_font_color="#34d399")
 
 fig.update_layout(
@@ -278,8 +280,8 @@ fig.update_layout(
     xaxis=dict(gridcolor='rgba(255,255,255,0.05)', showgrid=True),
     yaxis=dict(gridcolor='rgba(255,255,255,0.05)', showgrid=True),
 )
-fig.update_yaxes(title_text="Giá vé (INR)", secondary_y=False, color='#a5b4fc')
-fig.update_yaxes(title_text="Giá dầu Brent (USD)", secondary_y=True, color='#fca5a5')
+fig.update_yaxes(title_text="Ticket Price (INR)", secondary_y=False, color='#a5b4fc')
+fig.update_yaxes(title_text="Brent Oil Price (USD)", secondary_y=True, color='#fca5a5')
 
 st.plotly_chart(fig, use_container_width=True)
 
@@ -308,24 +310,24 @@ with col_left:
     st.plotly_chart(fig_fi, use_container_width=True)
 
 with col_right:
-    st.markdown('<div class="section-title">📈 IRF — Phản ứng Xung</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">📈 IRF — Impulse Response</div>', unsafe_allow_html=True)
     fig_irf = go.Figure()
     fig_irf.add_trace(go.Scatter(
         x=irf_data['horizon'], y=irf_data['cumulative_oil'],
-        name='Giá dầu → Giá vé', mode='lines+markers',
+        name='Oil → Ticket Price', mode='lines+markers',
         line=dict(color='#6366f1', width=2), marker=dict(size=5),
     ))
     fig_irf.add_trace(go.Scatter(
         x=irf_data['horizon'], y=irf_data['cumulative_fx'],
-        name='Tỷ giá → Giá vé', mode='lines+markers',
+        name='FX Rate → Ticket Price', mode='lines+markers',
         line=dict(color='#f59e0b', width=2), marker=dict(size=5),
     ))
     fig_irf.add_hline(y=0, line_dash='dash', line_color='rgba(255,255,255,0.3)')
     fig_irf.update_layout(
         template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         height=350, margin=dict(l=20, r=20, t=20, b=20),
-        xaxis=dict(title='Ngày sau shock', gridcolor='rgba(255,255,255,0.05)'),
-        yaxis=dict(title='Tổng Δ Giá vé tích lũy', gridcolor='rgba(255,255,255,0.05)'),
+        xaxis=dict(title='Days after shock', gridcolor='rgba(255,255,255,0.05)'),
+        yaxis=dict(title='Cumulative Δ Ticket Price', gridcolor='rgba(255,255,255,0.05)'),
         legend=dict(orientation='h', yanchor='bottom', y=1.02, x=0.5, xanchor='center'),
     )
     st.plotly_chart(fig_irf, use_container_width=True)
@@ -333,14 +335,14 @@ with col_right:
 # ═══════════════════════════════════════════════════════════════════
 # MODEL COMPARISON TABLE
 # ═══════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-title">⚖️ So sánh Mô hình</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">⚖️ Model Comparison</div>', unsafe_allow_html=True)
 
 comp_df = pd.DataFrame({
     'Metric':  ['RMSE (INR)', 'MAE (INR)', 'MAPE (%)'],
     'VAR':     [config['metrics']['VAR']['RMSE'], config['metrics']['VAR']['MAE'], config['metrics']['VAR']['MAPE']],
     'XGBoost': [config['metrics']['XGBoost']['RMSE'], config['metrics']['XGBoost']['MAE'], config['metrics']['XGBoost']['MAPE']],
 })
-comp_df['Tốt hơn'] = comp_df.apply(
+comp_df['Better'] = comp_df.apply(
     lambda r: '✅ XGBoost' if r['XGBoost'] < r['VAR'] else '✅ VAR', axis=1)
 
 st.dataframe(comp_df, use_container_width=True, hide_index=True)
@@ -348,37 +350,37 @@ st.dataframe(comp_df, use_container_width=True, hide_index=True)
 # ═══════════════════════════════════════════════════════════════════
 # BUSINESS STRATEGY
 # ═══════════════════════════════════════════════════════════════════
-st.markdown('<div class="section-title">💼 Đề xuất Chiến lược Kinh doanh</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">💼 Business Strategy Recommendations</div>', unsafe_allow_html=True)
 
 col_s1, col_s2 = st.columns(2)
 
 with col_s1:
     st.markdown(f"""
     <div class="strategy-card">
-        <h4>🎯 Chiến lược Định giá Động (Dynamic Pricing)</h4>
+        <h4>🎯 Dynamic Pricing Strategy</h4>
         <p>
-        Nhờ xác định được <b>độ trễ {LAG_OIL} ngày</b> giữa biến động giá dầu
-        và giá vé, bộ phận Sales có một <b>"cửa sổ thời gian" (time window)
-        vàng là {LAG_OIL * 24} giờ</b> để quyết định mức giá vé mới.
+        By identifying a <b>{LAG_OIL}-day lag</b> between oil price movements
+        and ticket prices, the Sales team has a <b>golden time window of
+        {LAG_OIL * 24} hours</b> to decide on new fare levels.
         <br><br>
-        Không cần thiết phải tăng giá ngay lập tức gây sốc cho khách hàng.
-        Thay vào đó, hãng bay có thể <b>điều chỉnh giá từ từ</b> trong khung
-        thời gian này để tối ưu hóa doanh thu mà không mất khách.
+        There is no need to raise prices immediately and shock customers.
+        Instead, the airline can <b>gradually adjust fares</b> within this
+        window to maximize revenue without losing passengers.
         </p>
     </div>""", unsafe_allow_html=True)
 
 with col_s2:
     st.markdown(f"""
     <div class="strategy-card">
-        <h4>🛡️ Chiến lược Phòng vệ (Hedging)</h4>
+        <h4>🛡️ Hedging Strategy</h4>
         <p>
-        Sự phụ thuộc vào biến động của giá dầu Brent cho thấy hãng bay
-        cần gia tăng mua các <b>hợp đồng tương lai (Futures Contracts)</b>
-        để chốt giá xăng cho ít nhất 1 tháng tới.
+        The dependence on Brent oil price volatility indicates that the airline
+        should increase its use of <b>Futures Contracts</b>
+        to lock in fuel prices for at least the next month.
         <br><br>
-        Feature Importance cho thấy biến <b>giá dầu trễ {LAG_OIL} ngày</b>
-        đóng góp đáng kể vào quyết định giá vé. Việc phòng vệ rủi ro
-        giá dầu sẽ giúp <b>ổn định chi phí vận hành</b> và duy trì biên lợi nhuận.
+        Feature Importance shows that the <b>{LAG_OIL}-day lagged oil price</b>
+        contributes significantly to fare decisions. Hedging oil price risk
+        will help <b>stabilize operating costs</b> and maintain profit margins.
         </p>
     </div>""", unsafe_allow_html=True)
 
